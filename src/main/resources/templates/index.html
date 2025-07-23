@@ -1,0 +1,13 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>HTMX with Spring Boot</title>
+    <script src="https://unpkg.com/htmx.org"></script>
+</head>
+<body>
+<h1 th:text="${message}"></h1>
+<div id="content">
+    <button hx-get="/load-content" hx-target="#content">Load Content</button>
+</div>
+</body>
+</html>

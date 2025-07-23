@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta content="width=device-width, initial-scale=1.0" name="viewport">
+    <title>Admin Constraints - Dutyfy</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+</head>
+<body>
+<nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+    <div class="container">
+        <a class="navbar-brand" href="/dashboard">Dutyfy Admin</a>
+        <div class="navbar-nav ms-auto">
+            <a class="nav-link" href="/dashboard">Dashboard</a>
+            <a class="nav-link" href="/logout">Logout</a>
+        </div>
+    </div>
+</nav>
+
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <h2>🚫 Admin Constraints</h2>
+
+            <div class="alert alert-warning">
+                <h5>🚧 Under Development</h5>
+                <p class="mb-0">Admin constraint management features are coming soon. For now, constraints are managed
+                    through the DataLoader class.</p>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h4>What are Admin Constraints?</h4>
+                </div>
+                <div class="card-body">
+                    <p>Admin constraints are <strong>hard constraints</strong> that cannot be violated when creating
+                        schedules. These include:</p>
+                    <ul>
+                        <li><strong>Religious holidays</strong> - Days when specific employees cannot work due to
+                            religious observances
+                        </li>
+                        <li><strong>Medical appointments</strong> - Scheduled medical procedures or treatments</li>
+                        <li><strong>Mandatory training</strong> - Required training sessions or conferences</li>
+                        <li><strong>Legal restrictions</strong> - Court dates, jury duty, etc.</li>
+                    </ul>
+
+                    <div class="alert alert-info mt-3">
+                        <strong>Note:</strong> Unlike employee preferred off dates (which are soft constraints),
+                        admin constraints are absolute and will cause schedule creation to fail if they cannot be
+                        satisfied.
+                    </div>
+
+                    <h6 class="mt-3">Current Sample Constraints (from DataLoader):</h6>
+                    <ul>
+                        <li>John Doe - Good Friday (April 18, 2025)</li>
+                        <li>Jane Smith - Rosh Hashanah (September 15, 2025)</li>
+                        <li>Mike Johnson - Christmas (December 25, 2025)</li>
+                    </ul>
+
+                    <h6 class="mt-3">Coming Soon:</h6>
+                    <ul>
+                        <li>Add new admin constraints</li>
+                        <li>Edit existing constraints</li>
+                        <li>Set recurring constraints (yearly holidays)</li>
+                        <li>Bulk import from calendar systems</li>
+                        <li>Constraint conflict detection</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+</html>
