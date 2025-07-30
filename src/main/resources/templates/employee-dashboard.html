@@ -70,13 +70,19 @@
                                 </div>
                                 <div class="btn-group-vertical btn-group-sm">
                                     <button class="btn btn-success btn-sm"
+                                            hx-confirm="Are you sure you want to approve this swap?"
                                             hx-post="/swap/approve"
-                                            hx-vals='{"requestId": "${request.id}"}'>
+                                            hx-swap="outerHTML"
+                                            hx-target="closest .border-bottom"
+                                            th:hx-vals="'{ &quot;requestId&quot;: &quot;' + ${request.id} + '&quot; }'">
                                         ✓
                                     </button>
                                     <button class="btn btn-danger btn-sm"
+                                            hx-confirm="Are you sure you want to reject this swap?"
                                             hx-post="/swap/reject"
-                                            hx-vals='{"requestId": "${request.id}"}'>
+                                            hx-swap="outerHTML"
+                                            hx-target="closest .border-bottom"
+                                            th:hx-vals="'{ &quot;requestId&quot;: &quot;' + ${request.id} + '&quot; }'">
                                         ✗
                                     </button>
                                 </div>
@@ -98,8 +104,11 @@
                         <a class="btn btn-primary" href="/employee/off-dates">
                             📝 Submit Off Dates
                         </a>
+                        <a class="btn btn-success" href="/swap/request">
+                            🔄 Request Shift Swap
+                        </a>
                         <a class="btn btn-secondary" href="/employee/swap-requests">
-                            🔄 My Swap Requests
+                            📋 My Swap Requests
                         </a>
                         <a class="btn btn-info" th:href="@{'/shifts/' + ${currentYear}}">
                             📊 View Full Schedule

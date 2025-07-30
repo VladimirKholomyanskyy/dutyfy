@@ -11,8 +11,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 @Transactional
@@ -140,6 +142,22 @@ public class ShiftSwapService {
 
     public List<ShiftSwapRequest> getRequestsByEmployee(Employee employee) {
         return swapRequestRepository.findByRequesterOrderByRequestDateDesc(employee);
+    }
+
+    public List<ShiftSwapRequest> getAllRequestsForEmployee(Employee employee) {
+        // Get both requests made by employee and requests received by employee
+        List<ShiftSwapRequest> sentRequests = swapRequestRepository.findByRequesterOrderByRequestDateDesc(employee);
+        List<ShiftSwapRequest> receivedRequests =
+                swapRequestRepository.findByTargetEmployeeOrderByRequestDateDesc(employee);
+
+        // Combine and sort by request date
+        List<ShiftSwapRequest> allRequests = new ArrayList<>();
+        allRequests.addAll(sentRequests);
+        allRequests.addAll(receivedRequests);
+
+        return allRequests.stream()
+                .sorted((a, b) -> b.getRequestDate().compareTo(a.getRequestDate()))
+                .collect(Collectors.toList());
     }
 
     public List<ShiftSwapRequest> getAllPendingRequests() {

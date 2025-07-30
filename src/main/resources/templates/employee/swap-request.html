@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <meta content="width=device-width, initial-scale=1.0" name="viewport">
+  <title>Request Shift Swap - Dutyfy</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+</head>
+<body>
+<nav class="navbar navbar-expand-lg navbar-dark bg-success">
+  <div class="container">
+    <a class="navbar-brand" href="/dashboard">Dutyfy</a>
+    <div class="navbar-nav ms-auto">
+      <a class="nav-link" href="/dashboard">Dashboard</a>
+      <a class="nav-link" href="/employee/swap-requests">My Requests</a>
+      <a class="nav-link" href="/logout">Logout</a>
+    </div>
+  </div>
+</nav>
+
+<div class="container mt-4">
+  <div class="row">
+    <div class="col-12">
+      <h2>🔄 Request Shift Swap</h2>
+
+      <!-- Flash Messages -->
+      <div class="alert alert-danger alert-dismissible fade show" th:if="${param.error}">
+        <span th:text="${param.error}"></span>
+        <button class="btn-close" data-bs-dismiss="alert" type="button"></button>
+      </div>
+
+      <div class="row">
+        <div class="col-md-8">
+          <div class="card">
+            <div class="card-header">
+              <h4>📝 Create Swap Request</h4>
+            </div>
+            <div class="card-body">
+              <div class="alert alert-info">
+                <strong>How it works:</strong>
+                <ol class="mb-0">
+                  <li>Select one of your upcoming shifts</li>
+                  <li>Choose a colleague who works on the same date</li>
+                  <li>Provide a reason for the swap</li>
+                  <li>They'll receive an email notification to approve/decline</li>
+                  <li>If approved, your shifts are automatically swapped</li>
+                </ol>
+              </div>
+
+              <form method="post" onsubmit="return validateSwapForm()" th:action="@{/swap/request}">
+                <!-- Step 1: Select Your Shift -->
+                <div class="card mb-3">
+                  <div class="card-header bg-light">
+                    <h6 class="mb-0">Step 1: Select Your Shift to Swap</h6>
+                  </div>
+                  <div class="card-body">
+                    <div class="text-muted" th:if="${myShifts.empty}">
+                      You have no upcoming shifts available for swapping.
+                    </div>
+                    <div th:unless="${myShifts.empty}">
+                      <div class="row">
+                        <div class="col-md-6 mb-2" th:each="shift : ${myShifts}">
+                          <div class="form-check">
+                            <input class="form-check-input" name="shiftId"
+                                   required
+                                   th:checked="${selectedShift != null and selectedShift.id == shift.id}"
+                                   th:id="'shift_' + ${shift.id}"
+                                   th:value="${shift.id}"
+                                   type="radio">
+                            <label class="form-check-label" th:for="'shift_' + ${shift.id}">
+                              <div class="fw-bold"
+                                   th:text="${#temporals.format(shift.shiftDate, 'EEEE, MMMM dd, yyyy')}">Monday,
+                                January 15, 2025
+                              </div>
+                              <small class="text-muted"
+                                     th:text="'(' + ${#temporals.format(shift.shiftDate, 'MMM dd')} + ')'">Jan
+                                15</small>
+                            </label>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Step 2: Select Target Employee -->
+                <div class="card mb-3">
+                  <div class="card-header bg-light">
+                    <h6 class="mb-0">Step 2: Choose Who to Swap With</h6>
+                  </div>
+                  <div class="card-body">
+                    <div id="targetEmployeeSection">
+                      <div class="text-muted mb-3" id="noShiftSelected">
+                        Please select a shift first to see available colleagues.
+                      </div>
+                      <div id="targetSelectContainer" style="display: none;">
+                        <select class="form-select" disabled id="targetEmployeeSelect" name="targetEmployeeId" required>
+                          <option value="">Select a colleague...</option>
+                          <option th:each="emp : ${otherEmployees}"
+                                  th:text="${emp.name}"
+                                  th:value="${emp.id}">Employee Name
+                          </option>
+                        </select>
+                        <div class="form-text">Only colleagues who work on the same date can swap with you.</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Step 3: Reason -->
+                <div class="card mb-3">
+                  <div class="card-header bg-light">
+                    <h6 class="mb-0">Step 3: Reason for Swap</h6>
+                  </div>
+                  <div class="card-body">
+                                            <textarea class="form-control" name="reason" placeholder="Please explain why you need to swap this shift (e.g., family commitment, medical appointment, etc.)"
+                                                      required
+                                                      rows="3"></textarea>
+                  </div>
+                </div>
+
+                <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                  <a class="btn btn-secondary" href="/employee/swap-requests">Cancel</a>
+                  <button class="btn btn-primary" th:disabled="${myShifts.empty}" type="submit">
+                    Send Swap Request
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-md-4">
+          <!-- Help Section -->
+          <div class="card">
+            <div class="card-header">
+              <h5>💡 Tips</h5>
+            </div>
+            <div class="card-body">
+              <ul class="list-unstyled">
+                <li class="mb-2">
+                  <strong>📧 Email Notification:</strong><br>
+                  <small class="text-muted">Your colleague will receive an email with your request</small>
+                </li>
+                <li class="mb-2">
+                  <strong>⏰ Response Time:</strong><br>
+                  <small class="text-muted">Most people respond within 24-48 hours</small>
+                </li>
+                <li class="mb-2">
+                  <strong>🔄 Automatic Swap:</strong><br>
+                  <small class="text-muted">If approved, shifts are immediately exchanged</small>
+                </li>
+                <li class="mb-2">
+                  <strong>📝 Be Specific:</strong><br>
+                  <small class="text-muted">Clear reasons get better responses</small>
+                </li>
+              </ul>
+            </div>
+          </div>
+
+          <!-- Current Requests -->
+          <div class="card mt-3">
+            <div class="card-header">
+              <h5>📋 Recent Requests</h5>
+            </div>
+            <div class="card-body">
+              <a class="btn btn-outline-primary btn-sm" href="/employee/swap-requests">
+                View All My Requests
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+        function updateTargetEmployees() {
+            const shiftRadios = document.querySelectorAll('input[name="shiftId"]');
+            const targetSelect = document.getElementById('targetEmployeeSelect');
+            const noShiftMessage = document.getElementById('noShiftSelected');
+            const targetContainer = document.getElementById('targetSelectContainer');
+
+            let selectedShift = null;
+            shiftRadios.forEach(radio => {
+                if (radio.checked) {
+                    selectedShift = radio;
+                }
+            });
+
+            if (selectedShift) {
+                // Show the select dropdown and hide the message
+                noShiftMessage.style.display = 'none';
+                targetContainer.style.display = 'block';
+                targetSelect.disabled = false;
+
+                console.log('Shift selected:', selectedShift.value);
+            } else {
+                // Hide the select dropdown and show the message
+                noShiftMessage.style.display = 'block';
+                targetContainer.style.display = 'none';
+                targetSelect.disabled = true;
+                targetSelect.value = '';
+
+                console.log('No shift selected');
+            }
+        }
+
+        function validateSwapForm() {
+            const shiftSelected = document.querySelector('input[name="shiftId"]:checked');
+            const targetSelected = document.getElementById('targetEmployeeSelect').value;
+            const reason = document.querySelector('textarea[name="reason"]').value.trim();
+
+            if (!shiftSelected) {
+                alert('Please select a shift to swap.');
+                return false;
+            }
+
+            if (!targetSelected) {
+                alert('Please select a colleague to swap with.');
+                return false;
+            }
+
+            if (!reason) {
+                alert('Please provide a reason for the swap.');
+                return false;
+            }
+
+            if (reason.length < 10) {
+                alert('Please provide a more detailed reason (at least 10 characters).');
+                return false;
+            }
+
+            return true;
+        }
+
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('Page loaded, initializing...');
+            updateTargetEmployees();
+
+            // Add event listeners to all shift radio buttons
+            const shiftRadios = document.querySelectorAll('input[name="shiftId"]');
+            shiftRadios.forEach(radio => {
+                radio.addEventListener('change', function() {
+                    console.log('Radio changed:', this.value);
+                    updateTargetEmployees();
+                });
+            });
+        });
+
+</script>
+</body>
+</html>

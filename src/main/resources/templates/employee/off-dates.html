@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta content="width=device-width, initial-scale=1.0" name="viewport">
+    <title>Preferred Off Dates - Dutyfy</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+</head>
+<body>
+<nav class="navbar navbar-expand-lg navbar-dark bg-success">
+    <div class="container">
+        <a class="navbar-brand" href="/dashboard">Dutyfy</a>
+        <div class="navbar-nav ms-auto">
+            <a class="nav-link" href="/dashboard">Dashboard</a>
+            <a class="nav-link" href="/logout">Logout</a>
+        </div>
+    </div>
+</nav>
+
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <h2>📝 Preferred Off Dates for <span th:text="${year}">2025</span></h2>
+
+            <!-- Flash Messages -->
+            <div class="alert alert-success alert-dismissible fade show" th:if="${success}">
+                <span th:text="${success}"></span>
+                <button class="btn-close" data-bs-dismiss="alert" type="button"></button>
+            </div>
+
+            <div class="alert alert-danger alert-dismissible fade show" th:if="${error}">
+                <span th:text="${error}"></span>
+                <button class="btn-close" data-bs-dismiss="alert" type="button"></button>
+            </div>
+
+            <div class="row">
+                <div class="col-md-8">
+                    <div class="card">
+                        <div class="card-header">
+                            <h4>Submit Your Preferred Off Dates</h4>
+                        </div>
+                        <div class="card-body">
+                            <div class="alert alert-info">
+                                <strong>Instructions:</strong>
+                                <ul class="mb-0">
+                                    <li>You can submit up to <strong th:text="${maxOffDays}">5</strong> preferred off
+                                        dates
+                                    </li>
+                                    <li>These are <em>preferences</em> - not guaranteed days off</li>
+                                    <li>The system will try to honor your requests when creating the schedule</li>
+                                    <li>Submit dates early for better chances of approval</li>
+                                    <li><strong>Deadline:</strong> <span
+                                            th:text="${#temporals.format(submissionDeadline, 'MMMM dd, yyyy')}">November 24, 2024</span>
+                                    </li>
+                                </ul>
+                            </div>
+
+                            <div class="alert alert-danger" th:if="${isDeadlinePassed}">
+                                <strong>⚠️ Submission Deadline Passed</strong><br>
+                                The deadline for submitting off-date requests has passed.
+                                You can no longer modify your preferences for <span th:text="${year}">2025</span>.
+                            </div>
+
+                            <form method="post" th:action="@{/employee/off-dates}" th:unless="${isDeadlinePassed}">
+                                <div id="offDatesContainer">
+                                    <div class="mb-3" th:each="offDate, iterStat : ${existingOffDates}">
+                                        <label class="form-label" th:for="'offDate' + ${iterStat.index}">
+                                            Preferred Off Date <span th:text="${iterStat.index + 1}">1</span>
+                                        </label>
+                                        <input class="form-control"
+                                               name="offDates"
+                                               onchange="validateDate(this)"
+                                               th:id="'offDate' + ${iterStat.index}"
+                                               th:max="${year + '-12-31'}"
+                                               th:min="${year + '-01-01'}"
+                                               th:value="${offDate.offDate}"
+                                               type="date">
+                                    </div>
+
+                                    <!-- Add empty fields if less than maxOffDays -->
+                                    <div class="mb-3"
+                                         th:each="i : ${#numbers.sequence(existingOffDates.size(), maxOffDays - 1)}">
+                                        <label class="form-label" th:for="'offDate' + ${i}">
+                                            Preferred Off Date <span th:text="${i + 1}">1</span>
+                                        </label>
+                                        <input class="form-control"
+                                               name="offDates"
+                                               onchange="validateDate(this)"
+                                               th:id="'offDate' + ${i}"
+                                               th:max="${year + '-12-31'}"
+                                               th:min="${year + '-01-01'}"
+                                               type="date">
+                                    </div>
+                                </div>
+
+                                <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                                    <a class="btn btn-secondary" href="/dashboard">Cancel</a>
+                                    <button class="btn btn-primary" onclick="return validateForm()" type="submit">Save
+                                        Preferred Dates
+                                    </button>
+                                </div>
+                            </form>
+
+                            <div class="alert alert-secondary" th:if="${isDeadlinePassed}">
+                                <p><strong>Your current submissions for <span th:text="${year}">2025</span>:</strong>
+                                </p>
+                                <div class="text-muted" th:if="${existingOffDates.empty}">
+                                    No off dates were submitted.
+                                </div>
+                                <ul class="list-unstyled" th:unless="${existingOffDates.empty}">
+                                    <li class="mb-1" th:each="offDate : ${existingOffDates}">
+                                            <span class="badge bg-secondary"
+                                                  th:text="${#temporals.format(offDate.offDate, 'EEEE, MMMM dd, yyyy')}">
+                                                Monday, January 15, 2025
+                                            </span>
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-4">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5>📅 Current Submissions</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="text-muted" th:if="${existingOffDates.empty}">
+                                No preferred off dates submitted yet.
+                            </div>
+                            <div th:unless="${existingOffDates.empty}">
+                                <p class="mb-2">
+                                    <strong>Submitted dates for <span th:text="${year}">2025</span>:</strong>
+                                </p>
+                                <ul class="list-unstyled">
+                                    <li class="mb-1" th:each="offDate : ${existingOffDates}">
+                                            <span class="badge bg-primary"
+                                                  th:text="${#temporals.format(offDate.offDate, 'MMM dd, yyyy (EEEE)')}">
+                                                Jan 15, 2025 (Monday)
+                                            </span>
+                                    </li>
+                                </ul>
+                            </div>
+
+                            <hr>
+                            <div class="small text-muted">
+                                <strong>Tips:</strong>
+                                <ul class="mb-0">
+                                    <li>Avoid consecutive dates</li>
+                                    <li>Consider holidays and weekends</li>
+                                    <li>Submit early in the year</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card mt-3">
+                        <div class="card-header">
+                            <h5>⏰ Important Dates</h5>
+                        </div>
+                        <div class="card-body">
+                            <ul class="list-unstyled mb-0">
+                                <li><strong>Schedule Creation:</strong> December 1st</li>
+                                <li><strong>Notification:</strong> 7 days before</li>
+                                <li><strong>Deadline:</strong> Submit by November 24th</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+        function validateDate(input) {
+            const selectedDate = new Date(input.value);
+            const year = [[${year}]];
+            const minDate = new Date(year, 0, 1); // January 1st
+            const maxDate = new Date(year, 11, 31); // December 31st
+
+            if (selectedDate < minDate || selectedDate > maxDate) {
+                alert('Please select a date in ' + year);
+                input.value = '';
+                return false;
+            }
+
+            // Check for duplicates
+            checkDuplicates();
+            return true;
+        }
+
+        function checkDuplicates() {
+            const inputs = document.querySelectorAll('input[name="offDates"]');
+            const values = [];
+            let hasDuplicates = false;
+
+            inputs.forEach(input => {
+                if (input.value) {
+                    if (values.includes(input.value)) {
+                        input.style.borderColor = '#dc3545';
+                        hasDuplicates = true;
+                    } else {
+                        input.style.borderColor = '';
+                        values.push(input.value);
+                    }
+                }
+            });
+
+            if (hasDuplicates) {
+                const warning = document.getElementById('duplicateWarning');
+                if (!warning) {
+                    const alertDiv = document.createElement('div');
+                    alertDiv.id = 'duplicateWarning';
+                    alertDiv.className = 'alert alert-warning';
+                    alertDiv.innerHTML = '<strong>⚠️ Duplicate dates detected!</strong> Please remove duplicate entries.';
+                    document.getElementById('offDatesContainer').prepend(alertDiv);
+                }
+            } else {
+                const warning = document.getElementById('duplicateWarning');
+                if (warning) {
+                    warning.remove();
+                }
+            }
+        }
+
+        function validateForm() {
+            const inputs = document.querySelectorAll('input[name="offDates"]');
+            const values = [];
+
+            inputs.forEach(input => {
+                if (input.value) {
+                    values.push(input.value);
+                }
+            });
+
+            // Check for duplicates
+            const uniqueValues = [...new Set(values)];
+            if (values.length !== uniqueValues.length) {
+                alert('Please remove duplicate dates before submitting.');
+                return false;
+            }
+
+            // Check maximum limit
+            if (values.length > [[${maxOffDays}]]) {
+                alert('You can only submit up to ' + [[${maxOffDays}]] + ' preferred off dates.');
+                return false;
+            }
+
+            return true;
+        }
+
+        // Initialize duplicate checking on page load
+        document.addEventListener('DOMContentLoaded', checkDuplicates);
+
+</script>
+</body>
+</html>

@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Swap Requests - Dutyfy</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+</head>
+<body>
+<nav class="navbar navbar-expand-lg navbar-dark bg-success">
+    <div class="container">
+        <a class="navbar-brand" href="/dashboard">Dutyfy</a>
+        <div class="navbar-nav ms-auto">
+            <a class="nav-link" href="/dashboard">Dashboard</a>
+            <a class="nav-link" href="/logout">Logout</a>
+        </div>
+    </div>
+</nav>
+
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2>🔄 My Swap Requests</h2>
+                <a href="/swap/request" class="btn btn-primary">
+                    ➕ New Swap Request
+                </a>
+            </div>
+
+            <!-- Flash Messages -->
+            <div th:if="${success}" class="alert alert-success alert-dismissible fade show">
+                <span th:text="${success}"></span>
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+
+            <div th:if="${error}" class="alert alert-danger alert-dismissible fade show">
+                <span th:text="${error}"></span>
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+
+            <!-- Requests Waiting for My Response -->
+            <div class="card mb-4" th:unless="${requestsForMe.empty}">
+                <div class="card-header bg-warning text-dark">
+                    <h4 class="mb-0">⏰ Requests Waiting for Your Response</h4>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div th:each="request : ${requestsForMe}" class="col-md-6 mb-3">
+                            <div class="card border-warning">
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-between align-items-start">
+                                        <div>
+                                            <h6 class="card-title" th:text="${request.requester.name}">John Doe</h6>
+                                            <p class="card-text">
+                                                <strong>Date:</strong> <span th:text="${#temporals.format(request.shift.shiftDate, 'EEEE, MMM dd, yyyy')}">Monday, Jan 15, 2025</span><br>
+                                                <strong>Reason:</strong> <span th:text="${request.reason}">Personal commitment</span><br>
+                                                <small class="text-muted">Requested: <span th:text="${#temporals.format(request.requestDate, 'MMM dd, yyyy HH:mm')}">Jan 10, 2025 14:30</span></small>
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                                        <button class="btn btn-success btn-sm"
+                                                hx-post="/swap/approve"
+                                                th:hx-vals="'{ &quot;requestId&quot;: &quot;' + ${request.id} + '&quot; }'"
+                                                hx-confirm="Are you sure you want to approve this swap?"
+                                                hx-target="closest .card"
+                                                hx-swap="outerHTML">
+                                            ✅ Approve
+                                        </button>
+                                        <button class="btn btn-danger btn-sm"
+                                                hx-post="/swap/reject"
+                                                th:hx-vals="'{ &quot;requestId&quot;: &quot;' + ${request.id} + '&quot; }'"
+                                                hx-confirm="Are you sure you want to reject this swap?"
+                                                hx-target="closest .card"
+                                                hx-swap="outerHTML">
+                                            ❌ Reject
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- My Sent Requests -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h4>📤 Requests I've Sent</h4>
+                </div>
+                <div class="card-body">
+                    <div th:if="${myRequests.empty}" class="text-muted text-center py-4">
+                        <p>You haven't sent any swap requests yet.</p>
+                        <a href="/swap/request" class="btn btn-primary">
+                            Create Your First Request
+                        </a>
+                    </div>
+                    <div th:unless="${myRequests.empty}" class="table-responsive">
+                        <table class="table table-hover">
+                            <thead class="table-light">
+                            <tr>
+                                <th>Date</th>
+                                <th>Requested From</th>
+                                <th>Reason</th>
+                                <th>Status</th><!DOCTYPE html>
+                                <html lang="en" xmlns:th="http://www.thymeleaf.org">
+                                <head>
+                                    <meta charset="UTF-8">
+                                    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                                    <title>My Swap Requests - Dutyfy</title>
+                                    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+                                    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+                                </head>
+                                <body>
+                                <nav class="navbar navbar-expand-lg navbar-dark bg-success">
+                                    <div class="container">
+                                        <a class="navbar-brand" href="/dashboard">Dutyfy</a>
+                                        <div class="navbar-nav ms-auto">
+                                            <a class="nav-link" href="/dashboard">Dashboard</a>
+                                            <a class="nav-link" href="/logout">Logout</a>
+                                        </div>
+                                    </div>
+                                </nav>
+
+                                <div class="container mt-4">
+                                    <div class="row">
+                                        <div class="col-12">
+                                            <h2>🔄 My Swap Requests</h2>
+
+                                            <div class="alert alert-info">
+                                                <h5>🚧 Under Development</h5>
+                                                <p class="mb-0">Shift swap functionality is coming soon! This will allow you to:</p>
+                                                <ul class="mt-2 mb-0">
+                                                    <li>Request to swap shifts with other employees</li>
+                                                    <li>View pending requests you've made</li>
+                                                    <li>Track approval/rejection status</li>
+                                                    <li>Respond to swap requests from others</li>
+                                                </ul>
+                                            </div>
+
+                                            <div class="card">
+                                                <div class="card-header">
+                                                    <h4>How Shift Swaps Will Work</h4>
+                                                </div>
+                                                <div class="card-body">
+                                                    <div class="row">
+                                                        <div class="col-md-6">
+                                                            <h6>📤 Making a Request:</h6>
+                                                            <ol>
+                                                                <li>Select one of your assigned shifts</li>
+                                                                <li>Choose which colleague to ask</li>
+                                                                <li>Provide a reason for the swap</li>
+                                                                <li>Submit the request</li>
+                                                            </ol>
+                                                        </div>
+                                                        <div class="col-md-6">
+                                                            <h6>📥 Receiving a Request:</h6>
+                                                            <ol>
+                                                                <li>Get email notification</li>
+                                                                <li>Review the request details</li>
+                                                                <li>Accept or decline</li>
+                                                                <li>Shifts are automatically swapped</li>
+                                                            </ol>
+                                                        </div>
+                                                    </div>
+
+                                                    <div class="alert alert-warning mt-3">
+                                                        <strong>Rules:</strong>
+                                                        <ul class="mb-0">
+                                                            <li>You can only swap with someone who has a shift on the same date</li>
+                                                            <li>No admin approval needed</li>
+                                                            <li>Both parties must agree</li>
+                                                            <li>Swaps are immediate and final</li>
+                                                        </ul>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+                                </body>
+                                </html>

@@ -74,9 +74,28 @@ public class DutyScheduler {
                     }
                 }
             }
-            System.out.println("✅ Schedule Created Successfully");
+            System.out.println("✅ Schedule Created Successfully - " + shiftsResult.size() + " shifts assigned");
         } else {
-            warnings.add("❌ No feasible solution found. Check constraints and employee availability.");
+            // Provide more detailed diagnostics for infeasible problems
+            if (status == CpSolverStatus.INFEASIBLE) {
+                warnings.add("❌ Schedule creation failed: Problem is INFEASIBLE");
+                warnings.add("Possible causes:");
+                warnings.add("- Too many admin constraints (hard constraints cannot be satisfied)");
+                warnings.add("- Not enough employees for the workload");
+                warnings.add("- Fairness constraints too strict");
+                warnings.add("Suggestions:");
+                warnings.add("- Review admin constraints for conflicts");
+                warnings.add("- Consider adding more employees");
+                warnings.add("- Relax fairness requirements");
+
+                System.out.println("❌ INFEASIBLE: Cannot create schedule with current constraints");
+                System.out.println("   Employees: " + numWorkers);
+                System.out.println("   Days: " + numDays);
+                System.out.println("   Admin constraints: " + adminConstraints.size());
+                System.out.println("   Avg shifts per employee: " + (numDays / (double) numWorkers));
+            } else {
+                warnings.add("❌ Schedule creation failed with status: " + status);
+            }
             System.out.println("❌ No solution found: " + status);
         }
 
@@ -104,38 +123,42 @@ public class DutyScheduler {
     private static void addFairnessConstraints(CpModel model, Literal[][] shifts, List<Employee> employees,
                                                int numDays, List<String> warnings) {
         // Calculate target assignments considering previous year
-        int totalAssignments = numDays;
-        int totalPreviousShifts = employees.stream().mapToInt(e -> e.getPreviousYearShifts()).sum();
+        int baseAssignments = numDays / employees.size();
+        int remainder = numDays % employees.size();
 
         for (int w = 0; w < employees.size(); w++) {
             Employee employee = employees.get(w);
 
-            // Calculate fair share: fewer assignments for those who worked more last year
-            int previousShifts = employee.getPreviousYearShifts();
-            double adjustmentFactor = totalPreviousShifts > 0 ?
-                    1.0 - (double) previousShifts / (totalPreviousShifts * 2.0) : 1.0;
+            // More relaxed fairness - just ensure everyone gets roughly equal assignments
+            int minAssignments = baseAssignments;
+            int maxAssignments = baseAssignments + (w < remainder ? 1 : 0);
 
-            int baseAssignments = numDays / employees.size();
-            int targetAssignments = Math.max(1, (int) (baseAssignments * adjustmentFactor));
-            int maxAssignments = targetAssignments + (numDays % employees.size() > w ? 1 : 0);
+            // Add some flexibility to avoid infeasibility
+            minAssignments = Math.max(1, minAssignments - 5); // Allow 5 fewer
+            maxAssignments = maxAssignments + 5; // Allow 5 more
 
             LinearExprBuilder shiftsWorked = LinearExpr.newBuilder();
             for (int d = 0; d < numDays; d++) {
                 shiftsWorked.add(shifts[w][d]);
             }
 
-            model.addLinearConstraint(shiftsWorked, Math.max(1, targetAssignments - 1), maxAssignments + 1);
+            model.addLinearConstraint(shiftsWorked, minAssignments, maxAssignments);
 
+            int previousShifts = employee.getPreviousYearShifts();
             if (previousShifts > baseAssignments * 1.5) {
                 warnings.add("Employee " + employee.getName() + " worked significantly more shifts last year (" +
-                        previousShifts + "). Adjusting assignment to be more fair.");
+                        previousShifts + "). Will try to balance assignments.");
             }
         }
+
+        System.out.println("Fairness constraints applied - Base assignments per employee: " + baseAssignments +
+                " (±5 flexibility)");
     }
 
     private static void addConsecutiveConstraints(CpModel model, Literal[][] shifts, int numWorkers, int numDays) {
-        // No more than 2 consecutive assignments (configurable)
-        int maxConsecutive = 2;
+        // Relax consecutive constraints to avoid infeasibility
+        // No more than 3 consecutive assignments (was 2, now more flexible)
+        int maxConsecutive = 3;
 
         for (int w = 0; w < numWorkers; w++) {
             for (int d = 0; d <= numDays - maxConsecutive - 1; d++) {
@@ -146,6 +169,8 @@ public class DutyScheduler {
                 model.addAtMostOne(consecutiveShifts);
             }
         }
+
+        System.out.println("Applied consecutive shift constraints (max " + maxConsecutive + " consecutive)");
     }
 
     private static void addObjectiveTerms(LinearExprBuilder obj, Literal[][] shifts, List<Employee> employees,
