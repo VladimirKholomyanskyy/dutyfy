@@ -49,6 +49,7 @@
               </div>
 
               <form method="post" onsubmit="return validateSwapForm()" th:action="@{/swap/request}">
+                <input th:name="${_csrf.parameterName}" th:value="${_csrf.token}" type="hidden"/>
                 <!-- Step 1: Select Your Shift -->
                 <div class="card mb-3">
                   <div class="card-header bg-light">

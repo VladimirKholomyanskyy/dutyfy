@@ -91,45 +91,82 @@ public class SwapController {
                                     Authentication authentication,
                                     RedirectAttributes redirectAttributes) {
         try {
+            System.out.println("🔄 Swap request received:");
+            System.out.println("   Shift ID: " + shiftId);
+            System.out.println("   Target Employee ID: " + targetEmployeeId);
+            System.out.println("   Reason: " + reason);
+
             String username = authentication.getName();
+            System.out.println("   Requester: " + username);
+
             Optional<Employee> requester = employeeRepository.findByEmail(username);
             Optional<Employee> targetEmployee = employeeRepository.findById(targetEmployeeId);
             Optional<Shift> shift = shiftRepository.findById(shiftId);
 
-            if (requester.isEmpty() || targetEmployee.isEmpty() || shift.isEmpty()) {
-                redirectAttributes.addFlashAttribute("error", "Invalid request data");
+            if (requester.isEmpty()) {
+                System.err.println("❌ Requester not found: " + username);
+                redirectAttributes.addFlashAttribute("error", "Requester not found");
                 return "redirect:/employee/swap-requests";
             }
 
+            if (targetEmployee.isEmpty()) {
+                System.err.println("❌ Target employee not found: " + targetEmployeeId);
+                redirectAttributes.addFlashAttribute("error", "Target employee not found");
+                return "redirect:/employee/swap-requests";
+            }
+
+            if (shift.isEmpty()) {
+                System.err.println("❌ Shift not found: " + shiftId);
+                redirectAttributes.addFlashAttribute("error", "Shift not found");
+                return "redirect:/employee/swap-requests";
+            }
+
+            System.out.println("✅ All entities found:");
+            System.out.println("   Requester: " + requester.get().getName());
+            System.out.println("   Target: " + targetEmployee.get().getName());
+            System.out.println("   Shift Date: " + shift.get().getShiftDate());
+
             // Validate that the shift belongs to the requester
             if (!shift.get().getEmployee().equals(requester.get())) {
+                System.err.println("❌ Shift ownership validation failed");
+                System.err.println("   Shift owner: " + shift.get().getEmployee().getName());
+                System.err.println("   Requester: " + requester.get().getName());
                 redirectAttributes.addFlashAttribute("error", "You can only request swaps for your own shifts");
                 return "redirect:/employee/swap-requests";
             }
 
             // Check if target employee has a shift on the same date
             LocalDate shiftDate = shift.get().getShiftDate();
+            System.out.println("🔍 Checking if target has shift on: " + shiftDate);
+
             List<Shift> targetShifts = schedulingService.getShiftsForEmployee(targetEmployee.get(),
                     shiftDate.getYear());
+            System.out.println("   Target has " + targetShifts.size() + " shifts in " + shiftDate.getYear());
+
             boolean targetHasShiftOnDate = targetShifts.stream()
                     .anyMatch(s -> s.getShiftDate().equals(shiftDate));
 
+            System.out.println("   Target has shift on " + shiftDate + ": " + targetHasShiftOnDate);
+
             if (!targetHasShiftOnDate) {
+                System.err.println("❌ Target employee doesn't have shift on same date");
                 redirectAttributes.addFlashAttribute("error",
                         targetEmployee.get().getName() + " doesn't have a shift on " + shiftDate + " to swap with");
                 return "redirect:/swap/request?shiftId=" + shiftId;
             }
 
+            System.out.println("🚀 Creating swap request...");
             ShiftSwapRequest swapRequest = swapService.createSwapRequest(
                     requester.get(), targetEmployee.get(), shift.get(), reason);
+
+            System.out.println("✅ Swap request created successfully: ID = " + swapRequest.getId());
 
             redirectAttributes.addFlashAttribute("success",
                     "Swap request sent to " + targetEmployee.get().getName() + " for " + shiftDate);
 
-            System.out.println("✅ Swap request created: " + swapRequest.getId());
-
         } catch (Exception e) {
-            System.err.println("Error creating swap request: " + e.getMessage());
+            System.err.println("💥 Error creating swap request: " + e.getMessage());
+            e.printStackTrace();
             redirectAttributes.addFlashAttribute("error", "Error: " + e.getMessage());
         }
 
